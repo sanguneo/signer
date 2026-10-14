@@ -48,10 +48,10 @@ export function cleanAndSign(text, id) {
 
 export function sign(prompt, id) {
   const p = structuredClone(prompt);
-  const sig = `Tiny hand-inked artist signature "${HANDLE}" in thin off-white script at the bottom-right corner, painter's-signature size, subtly integrated into the image`;
+  const sig = `Hand-inked artist signature "${HANDLE}" in off-white script at the bottom-right corner, small but clearly legible (letter height about 2.5% of the image height, 2-3x a typical painter's signature), subtly integrated into the image`;
   if (Array.isArray(p.fidelity_anchors)) p.fidelity_anchors.push(sig);
   else p.fidelity_anchors = [sig];
-  p.composition = `${p.composition ?? ""} A small artist signature "${HANDLE}" sits in the lower-right corner.`.trim();
+  p.composition = `${p.composition ?? ""} A clearly legible artist signature "${HANDLE}" sits in the lower-right corner.`.trim();
   if (Array.isArray(p.negative_prompt)) {
     p.negative_prompt = p.negative_prompt.map((s) =>
       s.replace(/\bwatermark, logo, text\b/, `watermark, logo, any text other than the small "${HANDLE}" signature`),
@@ -67,7 +67,7 @@ export function sign(prompt, id) {
 export function signText(text, id) {
   const body = text.trimEnd();
   const cut = body.indexOf(" ") > 0 ? body.indexOf(" ") : body.length;
-  return `${body.slice(0, cut)}${encodeHidden(`croissmouse:${id}`)}${body.slice(cut)}\n\nAdd a tiny hand-inked artist signature "${HANDLE}" in thin off-white script at the bottom-right corner, painter's-signature size, subtly integrated into the image.\n`;
+  return `${body.slice(0, cut)}${encodeHidden(`croissmouse:${id}`)}${body.slice(cut)}\n\nAdd a hand-inked artist signature "${HANDLE}" in off-white script at the bottom-right corner, small but clearly legible (letter height about 2.5% of the image height, 2-3x a typical painter's signature), subtly integrated into the image.\n`;
 }
 
 // Default ID: YYYYMMDD-<first words of the title>, e.g. 20261015-mysterious-woman-guy
