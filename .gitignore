@@ -1,0 +1,6 @@
+*.png
+*.jpg
+*.webp
+fawkes-*
+t-*
+node_modules/
