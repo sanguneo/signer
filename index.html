@@ -31,6 +31,8 @@
     <div class="card">
       <label for="in">원본 프롬프트 (JSON 또는 일반 문장)</label>
       <textarea id="in" placeholder='{ "purpose": "image generation", "title": "...", ... }'></textarea>
+      <label for="name" style="margin-top:10px">내 이름/핸들 (숨은 ID 앞에 붙어요, 비우면 ID만. 이 브라우저에 기억)</label>
+      <input id="name" placeholder="예: croissmouse" autocomplete="off">
       <label for="id" style="margin-top:10px">추적 ID (비우면 자동: 날짜-제목 앞 3단어)</label>
       <input id="id" placeholder="예: fawkes" autocomplete="off">
       <div class="row"><button id="b-sign">정리 + ID 넣기</button><button id="b-paste" class="ghost">붙여넣기</button></div>
@@ -57,6 +59,7 @@
 import { cleanAndSign, autoId, decodeHidden } from "./signer.mjs";
 const $ = (id) => document.getElementById(id);
 const tab = (s) => { $("p-sign").classList.toggle("hide", !s); $("p-dec").classList.toggle("hide", s); $("t-sign").classList.toggle("on", s); $("t-dec").classList.toggle("on", !s); };
+try { $("name").value = localStorage.getItem("signer-name") || ""; } catch {}
 $("t-sign").onclick = () => tab(true); $("t-dec").onclick = () => tab(false);
 const say = (el, text, ok) => { el.textContent = text; el.className = "msg " + (ok ? "ok" : "bad"); };
 
@@ -67,7 +70,10 @@ $("b-paste").onclick = async () => {
 $("b-sign").onclick = () => {
   const text = $("in").value;
   if (!text.trim()) return say($("m-sign"), "프롬프트를 넣어주세요.", false);
-  const id = $("id").value.trim() || autoId(text);
+  const name = $("name").value.trim();
+  try { localStorage.setItem("signer-name", name); } catch {}
+  const base = $("id").value.trim() || autoId(text);
+  const id = name ? name + ":" + base : base;
   const { signed, removed } = cleanAndSign(text, id);
   const r = { signed, removed, hidden: decodeHidden(signed) };
   $("out").value = r.signed;

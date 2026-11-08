@@ -4,7 +4,7 @@ Fork of prompt-signer without the visible signature. Live at https://signer.sang
 
 1. **Clean:** removes generator artifacts using the deartifi text-cleaner rules: hidden Unicode, bidi controls,
    `span_0` markers, and `[](start_span)` / `[](end_span)` links.
-2. **Trace:** hides the chosen ID in the title (or after the first word of a plain-text prompt) as invisible
+2. **Trace:** hides `<name>:<id>` (or just `<id>` when the name field is empty; the page remembers the name in this browser) in the title (or after the first word of a plain-text prompt) as invisible
    characters (ZWNJ/ZWJ between CGJ markers), so a copied prompt can be traced to its post. The ID survives a pass
    through the deartifi cleaner. IDs written by the original tool (`croissmouse:<id>`) still decode. No signature clause is added to the prompt.
 
