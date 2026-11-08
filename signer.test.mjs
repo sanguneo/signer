@@ -31,18 +31,18 @@ test("hides a decodable ID without adding any visible signature", () => {
   expect(parsed.fidelity_anchors).toEqual(["Red iris"]);
   expect(parsed.composition).toBe("Bust close-up crop.");
   expect(parsed.negative_prompt).toEqual(["cluttered background, watermark, logo, text"]);
-  expect(decodeHidden(signed)).toEqual(["croissmouse:fawkes"]);
+  expect(decodeHidden(signed)).toEqual(["fawkes"]);
 });
 
 test("plain-text prompts get only the hidden ID", () => {
   const { signed } = cleanAndSign("A quiet forest at dawn", "t2");
   expect(signed.replace(/[\u034F\u200C\u200D]/g, "")).toBe("A quiet forest at dawn\n");
-  expect(decodeHidden(signed)).toEqual(["croissmouse:t2"]);
+  expect(decodeHidden(signed)).toEqual(["t2"]);
 });
 
 test("hidden ID survives a second pass through the deartifi cleaner", () => {
   const { signed } = cleanAndSign(prompt, "fawkes");
-  expect(decodeHidden(cleanTextFingerprint(signed).text)).toEqual(["croissmouse:fawkes"]);
+  expect(decodeHidden(cleanTextFingerprint(signed).text)).toEqual(["fawkes"]);
 });
 
 test("still decodes IDs written with the legacy scheme", () => {

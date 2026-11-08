@@ -9,7 +9,8 @@ const BIT1 = "\u200D"; // zero width joiner
 const MARK = "\u034F"; // combining grapheme joiner
 // Legacy scheme (posts signed before 2026-10-15): ZWSP/ZWNJ bits between word joiners.
 const LEGACY = { bit0: "\u200B", bit1: "\u200C", mark: "\u2060" };
-export const PREFIX = "croissmouse:";
+// The hidden text is exactly the ID the user chose (older posts carry "croissmouse:<id>"; both decode).
+export const PREFIX = "";
 
 export function encodeHidden(text) {
   const bits = [...new TextEncoder().encode(text)].map((b) => b.toString(2).padStart(8, "0")).join("");
