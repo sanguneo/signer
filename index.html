@@ -1,18 +1,6 @@
-// croissmouse watermark web UI, reachable only over Tailscale.
-//   bun web.mjs            -> http://<tailscale-ip>:8787
-// Binds to the Tailscale IPv4 address, so it is not exposed on the LAN or the internet.
-import { cleanAndSign, autoId, decodeHidden } from "./wm.mjs";
-
-const PORT = Number(process.env.WM_PORT ?? 8787);
-const ip = Bun.spawnSync(["tailscale", "ip", "-4"]).stdout.toString().trim().split(/\s+/)[0];
-if (!/^100\./.test(ip)) {
-  console.error(`WMERR tailscale IPv4 not found (got "${ip}")`);
-  process.exit(1);
-}
-
-const PAGE = `<!doctype html>
+<!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>croissmouse 서명기</title>
+<title>프롬프트 서명기</title>
 <style>
   :root { color-scheme: light dark; --bg:#faf7f2; --fg:#2b2118; --card:#fff; --muted:#8a7a6a; --acc:#c8792a; --line:#e8dfd3; }
   @media (prefers-color-scheme: dark) { :root { --bg:#17130f; --fg:#f1e7db; --card:#221c16; --muted:#a89584; --acc:#e09a52; --line:#3a3027; } }
@@ -35,9 +23,9 @@ const PAGE = `<!doctype html>
   .hide { display:none; }
 </style></head>
 <body><main>
-  <h1>🥐 croissmouse 서명기</h1>
-  <p class="sub">제미나이 등이 붙인 이상한 문자를 먼저 정리하고(deartifi 규칙), @croissmouse 서명과 숨은 추적 ID를 넣어요. 퍼간 글에서 ID도 찾아요.</p>
-  <div class="tabs"><button id="t-sign" class="on">서명 넣기</button><button id="t-dec">불펌 확인</button></div>
+  <h1>🥐 프롬프트 서명기</h1>
+  <p class="sub">제미나이 등이 붙인 이상한 문자를 정리하고(deartifi 규칙), 보이지 않는 추적 ID를 숨겨 넣어요. 퍼간 글에서 ID도 찾아요. 모든 처리는 이 브라우저 안에서만 해요.</p>
+  <div class="tabs"><button id="t-sign" class="on">ID 넣기</button><button id="t-dec">불펌 확인</button></div>
 
   <section id="p-sign">
     <div class="card">
@@ -45,7 +33,7 @@ const PAGE = `<!doctype html>
       <textarea id="in" placeholder='{ "purpose": "image generation", "title": "...", ... }'></textarea>
       <label for="id" style="margin-top:10px">추적 ID (비우면 자동: 날짜-제목 앞 3단어)</label>
       <input id="id" placeholder="예: fawkes" autocomplete="off">
-      <div class="row"><button id="b-sign">서명 넣기</button><button id="b-paste" class="ghost">붙여넣기</button></div>
+      <div class="row"><button id="b-sign">정리 + ID 넣기</button><button id="b-paste" class="ghost">붙여넣기</button></div>
       <div id="m-sign" class="msg"></div>
     </div>
     <div class="card">
@@ -65,20 +53,23 @@ const PAGE = `<!doctype html>
     </div>
   </section>
 </main>
-<script>
+<script type="module">
+import { cleanAndSign, autoId, decodeHidden } from "./signer.mjs";
 const $ = (id) => document.getElementById(id);
 const tab = (s) => { $("p-sign").classList.toggle("hide", !s); $("p-dec").classList.toggle("hide", s); $("t-sign").classList.toggle("on", s); $("t-dec").classList.toggle("on", !s); };
 $("t-sign").onclick = () => tab(true); $("t-dec").onclick = () => tab(false);
-const post = async (path, body) => (await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })).json();
 const say = (el, text, ok) => { el.textContent = text; el.className = "msg " + (ok ? "ok" : "bad"); };
 
 $("b-paste").onclick = async () => {
   try { $("in").value = await navigator.clipboard.readText(); }
   catch { say($("m-sign"), "이 브라우저는 자동 붙여넣기를 막아요. 입력칸을 길게 눌러 붙여넣어 주세요.", false); }
 };
-$("b-sign").onclick = async () => {
-  const r = await post("/api/sign", { text: $("in").value, id: $("id").value.trim() || null });
-  if (!r.ok) return say($("m-sign"), r.error, false);
+$("b-sign").onclick = () => {
+  const text = $("in").value;
+  if (!text.trim()) return say($("m-sign"), "프롬프트를 넣어주세요.", false);
+  const id = $("id").value.trim() || autoId(text);
+  const { signed, removed } = cleanAndSign(text, id);
+  const r = { signed, removed, hidden: decodeHidden(signed) };
   $("out").value = r.signed;
   const junk = r.removed.length ? " · 정리한 이상한 문자: " + r.removed.map(x => x.kind + " " + x.count + "개").join(", ") : " · 정리할 이상한 문자 없음";
   say($("m-sign"), "완료! 숨은 ID: " + r.hidden.join(", ") + junk, true);
@@ -89,34 +80,9 @@ $("b-copy").onclick = async () => {
   catch { $("out").focus(); $("out").select(); $("out").setSelectionRange(0, t.length); document.execCommand("copy"); }
   say($("m-copy"), "복사했어요. 숨은 문자까지 같이 복사됐어요 ✅", true);
 };
-$("b-dec").onclick = async () => {
-  const r = await post("/api/decode", { text: $("sus").value });
-  if (r.ids.length) say($("m-dec"), "내 거 맞아요! 숨은 ID: " + r.ids.join(", "), true);
-  else say($("m-dec"), r.signature ? "숨은 ID는 지워졌지만 @croissmouse 서명 문구는 남아 있어요." : "숨은 ID도 서명 문구도 없어요.", false);
+$("b-dec").onclick = () => {
+  const ids = decodeHidden($("sus").value);
+  if (ids.length) say($("m-dec"), "숨은 ID를 찾았어요: " + ids.join(", "), true);
+  else say($("m-dec"), "숨은 ID가 없어요.", false);
 };
-</script></body></html>`;
-
-const json = (obj, status = 200) => Response.json(obj, { status });
-
-const server = Bun.serve({
-  hostname: ip,
-  port: PORT,
-  async fetch(req) {
-    const url = new URL(req.url);
-    if (req.method === "GET" && url.pathname === "/") return new Response(PAGE, { headers: { "Content-Type": "text/html; charset=utf-8" } });
-    if (req.method === "POST" && url.pathname === "/api/sign") {
-      const { text, id } = await req.json().catch(() => ({}));
-      if (typeof text !== "string" || !text.trim()) return json({ ok: false, error: "프롬프트를 넣어주세요." }, 400);
-      const useId = typeof id === "string" && id ? id : autoId(text);
-      const { signed, removed } = cleanAndSign(text, useId);
-      return json({ ok: true, id: useId, signed, hidden: decodeHidden(signed), removed });
-    }
-    if (req.method === "POST" && url.pathname === "/api/decode") {
-      const { text } = await req.json().catch(() => ({}));
-      const t = typeof text === "string" ? text : "";
-      return json({ ids: decodeHidden(t), signature: t.includes("@croissmouse") });
-    }
-    return new Response("not found", { status: 404 });
-  },
-});
-console.log(`WMREADY http://${server.hostname}:${server.port}`);
+</script></body></html>

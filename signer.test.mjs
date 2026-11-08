@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { cleanTextFingerprint } from "./text-cleaner.mjs";
-import { cleanAndSign, decodeHidden } from "./wm.mjs";
+import { cleanAndSign, decodeHidden } from "./signer.mjs";
 
 const prompt = JSON.stringify({
   title: "Mysterious Woman with Mask",
@@ -23,14 +23,21 @@ test("removes Gemini span links and markers before signing", () => {
   expect(() => JSON.parse(signed)).not.toThrow();
 });
 
-test("adds the visible signature clauses and a decodable hidden ID", () => {
+test("hides a decodable ID without adding any visible signature", () => {
   const { signed } = cleanAndSign(prompt, "fawkes");
   const parsed = JSON.parse(signed);
 
-  expect(parsed.fidelity_anchors.at(-1)).toContain('"@croissmouse"');
-  expect(parsed.composition).toContain('"@croissmouse"');
-  expect(parsed.negative_prompt[0]).toContain('any text other than the small "@croissmouse" signature');
+  expect(signed).not.toContain("@croissmouse");
+  expect(parsed.fidelity_anchors).toEqual(["Red iris"]);
+  expect(parsed.composition).toBe("Bust close-up crop.");
+  expect(parsed.negative_prompt).toEqual(["cluttered background, watermark, logo, text"]);
   expect(decodeHidden(signed)).toEqual(["croissmouse:fawkes"]);
+});
+
+test("plain-text prompts get only the hidden ID", () => {
+  const { signed } = cleanAndSign("A quiet forest at dawn", "t2");
+  expect(signed.replace(/[\u034F\u200C\u200D]/g, "")).toBe("A quiet forest at dawn\n");
+  expect(decodeHidden(signed)).toEqual(["croissmouse:t2"]);
 });
 
 test("hidden ID survives a second pass through the deartifi cleaner", () => {

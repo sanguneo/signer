@@ -1,34 +1,20 @@
-# prompt-signer
+# signer
 
-Signs image-generation prompts for @croissmouse.
+Fork of prompt-signer without the visible signature. Live at https://signer.sanguneo.com (GitHub Pages).
 
 1. **Clean:** removes generator artifacts using the deartifi text-cleaner rules: hidden Unicode, bidi controls,
    `span_0` markers, and `[](start_span)` / `[](end_span)` links.
-2. **Sign:** adds clauses that make image models paint a small "@croissmouse" painter's signature in the
-   lower-right corner of every image generated from the prompt.
-3. **Trace:** hides `croissmouse:<id>` in the title as invisible characters (ZWNJ/ZWJ between CGJ markers),
-   so a copied prompt can be traced to its post. The ID survives a pass through the deartifi cleaner.
+2. **Trace:** hides `croissmouse:<id>` in the title (or after the first word of a plain-text prompt) as invisible
+   characters (ZWNJ/ZWJ between CGJ markers), so a copied prompt can be traced to its post. The ID survives a pass
+   through the deartifi cleaner. No signature clause is added to the prompt.
 
-## CLI (Bun)
+Everything runs in the browser; the page sends nothing anywhere.
 
-```sh
-bun wm.mjs sign                         # clipboard -> signed prompt back into the clipboard (auto ID)
-bun wm.mjs sign --id fawkes             # same, with an explicit ID
-bun wm.mjs sign in.json out.txt --id x  # file mode (JSON or plain-text prompts)
-bun wm.mjs decode [file-or-text]        # find hidden IDs (clipboard by default)
-```
+## Files
 
-The default ID is `YYYYMMDD-<first three title words>`.
-
-## Web
-
-```sh
-bun web.mjs   # http://<tailscale-ip>:8787 (WM_PORT to change the port)
-```
-
-The server binds only to the machine's Tailscale IPv4 address.
-
-## Test
+- `index.html`: the static page (GitHub Pages serves it as is).
+- `signer.mjs`, `text-cleaner.mjs`: shared logic for the page and the CLI.
+- `wm.mjs`: Bun CLI (`bun wm.mjs sign [in] [out] --id x`, `bun wm.mjs decode [file-or-text]`).
 
 ```sh
 bun test
