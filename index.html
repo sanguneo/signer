@@ -56,7 +56,7 @@
   </section>
 </main>
 <script type="module">
-import { cleanAndSign, autoId, decodeUnique as decodeHidden } from "./signer.mjs";
+import { cleanAndSign, autoId, decodeUnique as decodeHidden } from "./signer.mjs?v=4";
 const $ = (id) => document.getElementById(id);
 const tab = (s) => { $("p-sign").classList.toggle("hide", !s); $("p-dec").classList.toggle("hide", s); $("t-sign").classList.toggle("on", s); $("t-dec").classList.toggle("on", !s); };
 try { $("name").value = localStorage.getItem("signer-name") || ""; } catch {}
