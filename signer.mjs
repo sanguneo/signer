@@ -46,13 +46,31 @@ export function sign(prompt, id) {
   return p;
 }
 
-// Plain-text prompts: hide the ID after a random word in the middle (never after the last word).
+// Plain-text prompts: hide the ID once in every paragraph (blocks split by blank lines or a "[Section]" line),
+// after a random word inside it, so copying a single section still carries the ID.
+function hideAtRandomGap(block, mark, rand) {
+  const gaps = [...block.matchAll(/(?<=\S) (?=\S)/g)].map((m) => m.index);
+  if (gaps.length === 0) return block;
+  const at = gaps[Math.floor(rand() * gaps.length)];
+  return block.slice(0, at) + mark + block.slice(at);
+}
 export function signText(text, id, rand = Math.random) {
   const body = text.trimEnd();
-  const gaps = [...body.matchAll(/ /g)].map((m) => m.index);
-  if (gaps.length === 0) return body + encodeHidden(PREFIX + id) + "\n";
-  const at = gaps[Math.floor(rand() * gaps.length)];
-  return body.slice(0, at) + encodeHidden(PREFIX + id) + body.slice(at) + "\n";
+  const mark = encodeHidden(PREFIX + id);
+  const parts = body.split(/(\n\s*\n|\n(?=\[))/);
+  let hid = 0;
+  const out = parts.map((p, i) => {
+    if (i % 2 === 1 || !p.trim()) return p;
+    const s = hideAtRandomGap(p, mark, rand);
+    if (s !== p) hid++;
+    return s;
+  }).join("");
+  return (hid ? out : body + mark) + "\n";
+}
+
+// Unique IDs, in order of first appearance (plain-text prompts repeat the ID per paragraph).
+export function decodeUnique(text) {
+  return [...new Set(decodeHidden(text))];
 }
 
 export function signAny(text, id) {

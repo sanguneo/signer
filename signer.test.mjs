@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { cleanTextFingerprint } from "./text-cleaner.mjs";
-import { cleanAndSign, decodeHidden, signText } from "./signer.mjs";
+import { cleanAndSign, decodeHidden, decodeUnique, signText } from "./signer.mjs";
 
 const prompt = JSON.stringify({
   title: "Mysterious Woman with Mask",
@@ -62,4 +62,13 @@ test("plain-text IDs land after the word the random pick chooses", () => {
   expect(first.indexOf("\u034F")).toBe(3);
   expect(last.indexOf("\u034F")).toBe("one two three".length);
   expect(decodeHidden(last)).toEqual(["x"]);
+});
+
+test("every section of a sectioned prompt carries the ID, so one copied section still decodes", () => {
+  const prompt = "[Identity Lock - keep the face]\nUse the attached image only as reference.\n[Layer 5: Skin]\nReal skin texture under natural light.\n\nLast paragraph here.";
+  const signed = signText(prompt, "me:p9", () => 0.5);
+  expect(signed.replace(/[\u034F\u200C\u200D]/g, "")).toBe(prompt + "\n");
+  expect(decodeHidden(signed)).toHaveLength(3);
+  const section = signed.split("\n[Layer 5")[0];
+  expect(decodeUnique(section)).toEqual(["me:p9"]);
 });
