@@ -46,9 +46,13 @@ export function sign(prompt, id) {
   return p;
 }
 
-// Plain-text prompts: hide the ID after the first word.
-export function signText(text, id) {
-  return hideAfterFirstWord(text.trimEnd(), id) + "\n";
+// Plain-text prompts: hide the ID after a random word in the middle (never after the last word).
+export function signText(text, id, rand = Math.random) {
+  const body = text.trimEnd();
+  const gaps = [...body.matchAll(/ /g)].map((m) => m.index);
+  if (gaps.length === 0) return body + encodeHidden(PREFIX + id) + "\n";
+  const at = gaps[Math.floor(rand() * gaps.length)];
+  return body.slice(0, at) + encodeHidden(PREFIX + id) + body.slice(at) + "\n";
 }
 
 export function signAny(text, id) {

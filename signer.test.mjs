@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { cleanTextFingerprint } from "./text-cleaner.mjs";
-import { cleanAndSign, decodeHidden } from "./signer.mjs";
+import { cleanAndSign, decodeHidden, signText } from "./signer.mjs";
 
 const prompt = JSON.stringify({
   title: "Mysterious Woman with Mask",
@@ -54,4 +54,12 @@ test("still decodes IDs written with the legacy scheme", () => {
       .replace(/1/g, "\u200C") +
     "\u2060 Woman";
   expect(decodeHidden(legacy)).toEqual(["croissmouse:old"]);
+});
+
+test("plain-text IDs land after the word the random pick chooses", () => {
+  const first = signText("one two three four", "x", () => 0);
+  const last = signText("one two three four", "x", () => 0.99);
+  expect(first.indexOf("\u034F")).toBe(3);
+  expect(last.indexOf("\u034F")).toBe("one two three".length);
+  expect(decodeHidden(last)).toEqual(["x"]);
 });
